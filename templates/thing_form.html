@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}{{ "Add thing" if mode == "new" else "Edit " ~ t.name }} - QuaTrel{% endblock %}
+{% block content %}
+<h1>{{ "Add a thing" if mode == "new" else "Edit " ~ t.name }}</h1>
+
+<form method="post" class="thingform">
+  <label class="wide">Name <span class="hint">the label for this particular thing, e.g. "shack router"</span>
+    <input type="text" name="name" value="{{ t.name }}" required autofocus>
+  </label>
+
+  <fieldset>
+    <legend>WHAT <span class="hint">(thing)</span></legend>
+    <select name="type_id">
+      <option value="">choose&hellip;</option>
+      {% for x in types %}<option value="{{ x.id }}" {% if t.type_id == x.id %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+    </select>
+    <label class="inline">or add a new one <input type="text" name="new_type" placeholder="e.g. router"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>WHY <span class="hint">(role; check all that apply)</span></legend>
+    <div class="checks">
+      {% for x in roles %}
+      <label class="check"><input type="checkbox" name="role_ids" value="{{ x.id }}" {% if x.id in t.role_ids %}checked{% endif %}> {{ x.label }}</label>
+      {% else %}<span class="hint">No roles yet.</span>{% endfor %}
+    </div>
+    <label class="inline">add new roles <input type="text" name="new_roles" placeholder="e.g. AllStar; M17"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>WHERE <span class="hint">(location)</span></legend>
+    <select name="location_id">
+      <option value="">(none)</option>
+      {% for x in locations %}<option value="{{ x.id }}" {% if t.location_id == x.id %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+    </select>
+    <label class="inline">or add a new one <input type="text" name="new_location" placeholder="e.g. shack"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Status</legend>
+    <select name="status_id">
+      {% for x in statuses %}<option value="{{ x.id }}" {% if t.status_id == x.id %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+    </select>
+  </fieldset>
+
+  <label class="wide">Wiki page URL <span class="hint">optional</span>
+    <input type="url" name="wiki_url" value="{{ t.wiki_url or '' }}" placeholder="https://">
+  </label>
+  <label class="wide">Notes <span class="hint">optional</span>
+    <textarea name="notes" rows="3">{{ t.notes or '' }}</textarea>
+  </label>
+
+  <fieldset class="eventbox">
+    {% if mode == "new" %}
+    <legend>Starting event <span class="hint">(every thing begins its history with one)</span></legend>
+    {% else %}
+    <legend>Record this change <span class="hint">(made automatically if WHERE, WHY, or status changes)</span></legend>
+    {% endif %}
+    <label class="inline">WHEN <span class="hint">(date or timestamp)</span>
+      <input type="text" name="event_when" value="{{ ev.when }}" placeholder="20261021 or 20261021 1430">
+    </label>
+    <label class="inline">Kind
+      <select name="event_kind_id">
+        {% if mode == "edit" %}<option value="">(automatic)</option>{% endif %}
+        {% for k in kinds %}<option value="{{ k.id }}" {% if ev.kind_id == k.id %}selected{% endif %}>{{ k.label }}</option>{% endfor %}
+      </select>
+    </label>
+    <label class="wide">Description <span class="hint">optional</span>
+      <input type="text" name="event_description" value="{{ ev.description }}">
+    </label>
+  </fieldset>
+
+  <div class="actions">
+    <button type="submit">Save</button>
+    {% if mode == "new" %}<button type="submit" name="another" value="1" class="secondary">Save and add another</button>{% endif %}
+    <a href="{{ url_for('thing_view', thing_id=thing_id) if mode == 'edit' else url_for('index') }}">Cancel</a>
+  </div>
+</form>
+
+{% if mode == "edit" %}
+<form method="post" action="{{ url_for('thing_delete', thing_id=thing_id) }}" class="danger"
+      onsubmit="return confirm('Delete this thing and its entire history? This cannot be undone. To keep the history, set its status to Retired instead.');">
+  <button type="submit" class="dangerbtn">Delete this thing</button>
+  <span class="hint">To keep its history, set the status to Retired instead.</span>
+</form>
+{% endif %}
+{% endblock %}

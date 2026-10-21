@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Import and export - QuaTrel{% endblock %}
+{% block content %}
+<h1>Import and export</h1>
+
+<section class="card">
+  <h2>Starter CSV: load your things from a spreadsheet</h2>
+  <p>Build a list in any spreadsheet with one row per thing, save it as CSV, and import it here. QuaTrel shows a preview before anything is saved.</p>
+  <table class="spec">
+    <thead><tr><th>Column</th><th>Required?</th><th>What goes in it</th></tr></thead>
+    <tbody>
+      <tr><td>name</td><td>yes</td><td>The label for this particular thing, e.g. "shack router"</td></tr>
+      <tr><td>what</td><td>yes</td><td>WHAT (thing): router, hotspot, PC&hellip;</td></tr>
+      <tr><td>why</td><td>no</td><td>WHY (role). Several roles go in one cell separated by semicolons: <code>AllStar; DVSwitch</code></td></tr>
+      <tr><td>where</td><td>no</td><td>WHERE (location): shack, garage, cabin&hellip;</td></tr>
+      <tr><td>status</td><td>no</td><td>Blank means In service. Also: Spare, Surplus, Broken, Retired</td></tr>
+      <tr><td>when</td><td>no</td><td>Date of the starting event: <code>20261021</code>, <code>2026-10-21</code>, or <code>10/21/2026</code>. Blank means today. YYYYMMDD is the safest in Excel, which never reformats it</td></tr>
+      <tr><td>wiki_url</td><td>no</td><td>Link to the thing's wiki page</td></tr>
+      <tr><td>notes</td><td>no</td><td>Anything else</td></tr>
+    </tbody>
+  </table>
+  <p>Any WHAT, WHY, WHERE, or status value QuaTrel hasn't seen is added to its lists automatically.</p>
+  <p><a class="button secondary" href="{{ url_for('starter_template') }}">Download the starter template</a></p>
+  <form method="post" action="{{ url_for('import_starter') }}" enctype="multipart/form-data" class="upload">
+    <input type="file" name="file" accept=".csv,text/csv" required>
+    <button type="submit">Preview import</button>
+  </form>
+</section>
+
+<section class="card">
+  <h2>Export</h2>
+  <ul>
+    <li><a href="{{ url_for('export_things_csv') }}">quatrel-things.csv</a>: one row per thing, in the starter CSV layout (it can be re-imported elsewhere).</li>
+    <li><a href="{{ url_for('export_events_csv') }}">quatrel-events.csv</a>: every event, oldest first.</li>
+    <li><a href="{{ url_for('export_json') }}">JSON backup</a>: everything, for a full restore.</li>
+  </ul>
+</section>
+
+<section class="card">
+  <h2>Restore from a JSON backup</h2>
+  <p class="warn">This replaces everything in QuaTrel with the contents of the backup.</p>
+  <form method="post" action="{{ url_for('import_json') }}" enctype="multipart/form-data" class="upload">
+    <input type="file" name="file" accept=".json,application/json" required>
+    <label class="check"><input type="checkbox" name="confirm" value="1"> Yes, replace everything</label>
+    <button type="submit" class="dangerbtn">Restore</button>
+  </form>
+</section>
+{% endblock %}

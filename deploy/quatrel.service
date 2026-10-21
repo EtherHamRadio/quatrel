@@ -1,0 +1,20 @@
+# QuaTrel systemd service
+# Install:  cp /opt/quatrel/deploy/quatrel.service /etc/systemd/system/
+#           systemctl daemon-reload && systemctl enable --now quatrel
+[Unit]
+Description=QuaTrel equipment log
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=quatrel
+Group=quatrel
+WorkingDirectory=/opt/quatrel
+EnvironmentFile=/etc/quatrel.env
+ExecStart=/opt/quatrel/.venv/bin/python /opt/quatrel/app.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

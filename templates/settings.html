@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Settings - QuaTrel{% endblock %}
+{% block content %}
+<h1>Settings</h1>
+<p class="hint">Rename any value here and the change shows everywhere. A value that is in use can be renamed but not deleted.</p>
+
+{% for lst in lists %}
+<section class="vocab" id="{{ lst.name }}">
+  <h2>{{ lst.cfg.title }}{% if lst.cfg.facet %} <span class="hint">{{ lst.cfg.facet }}</span>{% endif %}</h2>
+  {% if lst.cfg.sortable %}<p class="hint">Lower order numbers appear first.{% if lst.cfg.hideable %} "Hidden" statuses start unchecked in the search's status filter.{% endif %}</p>{% endif %}
+  <table class="vocabtable">
+    <tbody>
+    {% for r in lst.rows %}
+      <tr>
+        <td>
+          <form method="post" action="{{ url_for('vocab_update', name=lst.name, row_id=r.id) }}" class="rowform">
+            <input type="text" name="label" value="{{ r.label }}" required>
+            {% if lst.cfg.sortable %}<input type="number" name="sort_order" value="{{ r.sort_order }}" class="num" title="Order">{% endif %}
+            {% if lst.cfg.hideable %}<label class="check" title="Hidden by default"><input type="checkbox" name="hidden" value="1" {% if r.hidden_by_default %}checked{% endif %}> hidden</label>{% endif %}
+            <span class="uses">{{ r.uses }} use{{ "" if r.uses == 1 else "s" }}</span>
+            <button type="submit" class="secondary">Save</button>
+            {% if r.uses == 0 %}
+            <button type="submit" class="linkbtn" formaction="{{ url_for('vocab_delete', name=lst.name, row_id=r.id) }}"
+                    onclick="return confirm('Delete this value?');">delete</button>
+            {% endif %}
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      <tr><td class="hint">Empty. Values are added here, on the Add thing form, or by a starter CSV import.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <form method="post" action="{{ url_for('vocab_add', name=lst.name) }}" class="rowform add">
+    <input type="text" name="label" placeholder="new value" required>
+    <button type="submit">Add</button>
+  </form>
+</section>
+{% endfor %}
+{% endblock %}

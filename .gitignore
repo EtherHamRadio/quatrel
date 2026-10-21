@@ -1,0 +1,17 @@
+# Your data and secrets stay out of the repository
+quatrel.db
+quatrel.db-journal
+.quatrel-secret
+quatrel-backup-*.json
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

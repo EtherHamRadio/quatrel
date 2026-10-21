@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Import preview - QuaTrel{% endblock %}
+{% block content %}
+<h1>Import preview</h1>
+
+{% if errors %}
+<div class="flash error">
+  <p><strong>Nothing was imported.</strong> Fix these in your spreadsheet, save it as CSV again, and re-import:</p>
+  <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul>
+</div>
+<p><a href="{{ url_for('import_export') }}">Back to import</a></p>
+{% elif not rows %}
+<div class="flash error">The file has no rows to import.</div>
+<p><a href="{{ url_for('import_export') }}">Back to import</a></p>
+{% else %}
+<p>Ready to import <strong>{{ rows|length }} thing{{ "" if rows|length == 1 else "s" }}</strong>.</p>
+
+{% set any_new = new.values()|select|list %}
+{% if any_new %}
+<section class="card">
+  <h2>New values this import will add</h2>
+  <p class="hint">Check these for near-duplicates (like "Lake House" and "lake house") before importing.</p>
+  {% for title, values in new.items() if values %}
+  <p><strong>{{ title }}:</strong> {{ values|join(", ") }}</p>
+  {% endfor %}
+</section>
+{% endif %}
+
+<div class="tablewrap">
+<table>
+  <thead><tr><th>Name</th><th>WHAT</th><th>WHY</th><th>WHERE</th><th>Status</th><th>WHEN</th><th>Notes</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr><td>{{ r.name }}</td><td>{{ r.what }}</td><td>{{ r.roles|join(", ") or "—" }}</td>
+      <td>{{ r.where or "—" }}</td><td>{{ r.status }}</td><td class="nowrap">{{ r.when }}</td><td>{{ r.notes }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<form method="post" action="{{ url_for('import_starter_confirm') }}" class="actions">
+  <input type="hidden" name="payload" value="{{ payload }}">
+  <button type="submit">Import {{ rows|length }} thing{{ "" if rows|length == 1 else "s" }}</button>
+  <a href="{{ url_for('import_export') }}">Cancel</a>
+</form>
+{% endif %}
+{% endblock %}

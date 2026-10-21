@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block content %}
+{% if thing_count == 0 %}
+<div class="welcome">
+  <h1>Welcome to QuaTrel</h1>
+  <p>Nothing is recorded yet. Two ways to start:</p>
+  <ul>
+    <li><a href="{{ url_for('import_export') }}">Import a starter CSV</a> built in a spreadsheet: one row per thing, with name, WHAT, WHY, and WHERE.</li>
+    <li><a href="{{ url_for('thing_new') }}">Add things one at a time</a>.</li>
+  </ul>
+</div>
+{% endif %}
+
+<form method="get" action="{{ url_for('index') }}" class="picker">
+  <input type="hidden" name="go" value="1">
+  <div class="facetbar">
+    {% for key, lab in FACETS.items() %}<span>{{ lab[0] }}<span class="hint">({{ lab[1] }})</span></span>{% endfor %}
+  </div>
+  <div class="slots">
+  {% for s in slots %}
+    <fieldset class="slot">
+      <legend>{{ ["Primary", "Secondary", "Tertiary"][loop.index0] }}</legend>
+      <label>Facet
+        <select name="f{{ s.n }}" id="f{{ s.n }}" onchange="syncSlot('{{ s.n }}')">
+          <option value="">(none)</option>
+          {% for key, lab in FACETS.items() %}
+          <option value="{{ key }}" {% if s.facet == key %}selected{% endif %}>{{ lab[0] }} ({{ lab[1] }})</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <div data-slot="{{ s.n }}" data-facet="what"><label>Filter
+        <select name="v{{ s.n }}"><option value="">any</option>
+        {% for x in types %}<option value="{{ x.id }}" {% if s.facet == 'what' and s.value == x.id|string %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+        </select></label></div>
+      <div data-slot="{{ s.n }}" data-facet="why"><label>Filter
+        <select name="v{{ s.n }}"><option value="">any</option>
+        {% for x in roles %}<option value="{{ x.id }}" {% if s.facet == 'why' and s.value == x.id|string %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+        </select></label></div>
+      <div data-slot="{{ s.n }}" data-facet="where"><label>Filter
+        <select name="v{{ s.n }}"><option value="">any</option>
+        {% for x in locations %}<option value="{{ x.id }}" {% if s.facet == 'where' and s.value == x.id|string %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+        </select></label></div>
+      <div data-slot="{{ s.n }}" data-facet="when" class="daterange">
+        <label>From <input type="date" name="from{{ s.n }}" value="{{ s['from'] if s.facet == 'when' else '' }}"></label>
+        <label>To <input type="date" name="to{{ s.n }}" value="{{ s['to'] if s.facet == 'when' else '' }}"></label>
+      </div>
+
+      <label>Order
+        <select name="d{{ s.n }}">
+          <option value="" {% if not s.dir %}selected{% endif %}>default</option>
+          <option value="asc" {% if s.dir == 'asc' %}selected{% endif %}>A&rarr;Z / oldest first</option>
+          <option value="desc" {% if s.dir == 'desc' %}selected{% endif %}>Z&rarr;A / newest first</option>
+        </select>
+      </label>
+    </fieldset>
+  {% endfor %}
+  </div>
+
+  <fieldset class="statuses">
+    <legend>Status</legend>
+    {% for st in statuses %}
+    <label class="check"><input type="checkbox" name="st" value="{{ st.id }}" {% if st.id in st_ids %}checked{% endif %}> {{ st.label }}</label>
+    {% endfor %}
+  </fieldset>
+
+  <div class="actions">
+    <button type="submit">Search</button>
+    <a href="{{ url_for('index') }}">Reset</a>
+    <span class="hint">Choosing WHEN in any slot lists events; otherwise QuaTrel lists things.</span>
+  </div>
+</form>
+
+{% if thing_count %}
+{% if why_index and not event_view %}
+{% set n_things = rows|map(attribute="id")|unique|list|length %}
+<p class="count">{{ n_things }} thing{{ "" if n_things == 1 else "s" }} in {{ rows|length }} rows <span class="hint">(a thing with several roles is listed under each role)</span></p>
+{% else %}
+<p class="count">{{ rows|length }} {{ "event" if event_view else "thing" }}{{ "" if rows|length == 1 else "s" }}{% if why_index %} <span class="hint">(an event for a thing with several roles is listed under each role)</span>{% endif %}</p>
+{% endif %}
+<div class="tablewrap">
+<table>
+  {% if event_view %}
+  <thead><tr><th>WHEN</th><th>Thing</th><th>Kind</th>{% if why_index %}<th>WHY</th>{% endif %}<th>WHERE</th><th>Status</th><th>Description</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td class="nowrap">{{ r.event_when }}</td>
+      <td><a href="{{ url_for('thing_view', thing_id=r.id) }}">{{ r.name }}</a>{% set w = r.wiki_url|safe_url %}{% if w %} <a class="wiki" href="{{ w }}" target="_blank" rel="noopener">wiki</a>{% endif %}</td>
+      <td>{{ r.kind }}</td>
+      {% if why_index %}<td>{{ r.why_label or "—" }}</td>{% endif %}
+      <td>{{ r.location or "—" }}</td>
+      <td>{{ r.status or "—" }}</td>
+      <td>{{ r.description or "" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  {% else %}
+  <thead><tr><th>Thing</th><th>WHAT</th><th>WHY</th><th>WHERE</th><th>Status</th><th>Last event</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><a href="{{ url_for('thing_view', thing_id=r.id) }}">{{ r.name }}</a>{% set w = r.wiki_url|safe_url %}{% if w %} <a class="wiki" href="{{ w }}" target="_blank" rel="noopener">wiki</a>{% endif %}</td>
+      <td>{{ r.type }}</td>
+      <td>{% if why_index %}{{ r.why_label or "—" }}{% else %}{{ roles_map.get(r.id, [])|join(", ") or "—" }}{% endif %}</td>
+      <td>{{ r.location or "—" }}</td>
+      <td>{{ r.status }}</td>
+      <td class="nowrap">{{ r.last_event or "—" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  {% endif %}
+</table>
+</div>
+{% endif %}
+
+<script>
+function syncSlot(n) {
+  var f = document.getElementById('f' + n).value;
+  document.querySelectorAll('[data-slot="' + n + '"]').forEach(function (el) {
+    var on = el.dataset.facet === f;
+    el.hidden = !on;
+    el.querySelectorAll('input, select').forEach(function (i) { i.disabled = !on; });
+  });
+}
+['1', '2', '3'].forEach(syncSlot);
+</script>
+{% endblock %}

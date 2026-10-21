@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}{{ t.name }} - QuaTrel{% endblock %}
+{% block content %}
+<div class="thinghead">
+  <h1>{{ t.name }}</h1>
+  <a class="button secondary" href="{{ url_for('thing_edit', thing_id=t.id) }}">Edit</a>
+</div>
+
+<dl class="facts">
+  <dt>WHAT</dt><dd>{{ t.type }}</dd>
+  <dt>WHY</dt><dd>{{ roles|join(", ") or "—" }}</dd>
+  <dt>WHERE</dt><dd>{{ t.location or "—" }}</dd>
+  <dt>Status</dt><dd>{{ t.status }}</dd>
+  {% set w = t.wiki_url|safe_url %}{% if w %}<dt>Wiki</dt><dd><a href="{{ w }}" target="_blank" rel="noopener">{{ w }}</a></dd>{% elif t.wiki_url %}<dt>Wiki</dt><dd>{{ t.wiki_url }} <span class="hint">(not a web link)</span></dd>{% endif %}
+  {% if t.notes %}<dt>Notes</dt><dd class="notes">{{ t.notes }}</dd>{% endif %}
+</dl>
+
+<h2>Record an event</h2>
+<form method="post" action="{{ url_for('event_add', thing_id=t.id) }}" class="eventform">
+  <label>WHEN <span class="hint">(date or timestamp)</span>
+    <input type="text" name="event_when" value="{{ now }}" placeholder="20261021 or 20261021 1430">
+  </label>
+  <label>Kind
+    <select name="kind_id">
+      {% for k in kinds %}<option value="{{ k.id }}" {% if k.label|lower == "updated" %}selected{% endif %}>{{ k.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>WHERE after this
+    <select name="location_id">
+      <option value="">(none)</option>
+      {% for x in locations %}<option value="{{ x.id }}" {% if t.location_id == x.id %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Status after this
+    <select name="status_id">
+      {% for x in statuses %}<option value="{{ x.id }}" {% if t.status_id == x.id %}selected{% endif %}>{{ x.label }}</option>{% endfor %}
+    </select>
+  </label>
+  <label class="wide">Description
+    <input type="text" name="description" placeholder="what happened">
+  </label>
+  <div class="actions"><button type="submit">Add event</button>
+    <span class="hint">To change WHY (roles), use Edit; the change is recorded as an event.</span></div>
+</form>
+
+<div class="timelinehead">
+  <h2>History</h2>
+  {% if order == "asc" %}
+  <a href="{{ url_for('thing_view', thing_id=t.id) }}">Show newest first</a>
+  {% else %}
+  <a href="{{ url_for('thing_view', thing_id=t.id, order='asc') }}">Show oldest first</a>
+  {% endif %}
+</div>
+
+<ol class="timeline">
+{% for item in timeline %}
+  {% set e = item.e %}
+  <li>
+    <div class="when">{{ e.event_when }}</div>
+    <div class="body">
+      <div><strong>{{ e.kind }}</strong>
+        <span class="meta">&middot; {{ e.location or "no location" }} &middot; {{ e.status or "no status" }}</span></div>
+      {% for n in item.notes %}<div class="change">{{ n }}</div>{% endfor %}
+      {% if e.description %}<div>{{ e.description }}</div>{% endif %}
+    </div>
+    <form method="post" action="{{ url_for('event_delete', event_id=e.id) }}"
+          onsubmit="return confirm('Delete this event? The thing\'s current WHERE, WHY, and status will not change.');">
+      <button type="submit" class="linkbtn" title="Delete this event">delete</button>
+    </form>
+  </li>
+{% else %}
+  <li class="empty">No events yet.</li>
+{% endfor %}
+</ol>
+{% endblock %}
